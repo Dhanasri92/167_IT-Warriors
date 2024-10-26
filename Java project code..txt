@@ -1,0 +1,159 @@
+<dependencies>
+    <!-- Apache POI for Excel -->
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi</artifactId>
+        <version>5.2.3</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>5.2.3</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.xmlbeans</groupId>
+        <artifactId>xmlbeans</artifactId>
+        <version>5.1.1</version>
+    </dependency>
+    <!-- Apache Commons CSV for BibTeX Parsing -->
+    <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-csv</artifactId>
+        <version>1.9.</version>
+    </dependency>
+</dependencies>
+
+
+
+
+public class Publication {
+    private String author;
+    private String title;
+    private int year;
+
+    public Publication(String author, String title, int year) {
+        this.author = author;
+        this.title = title;
+        this.year = year;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    @Override
+    public String toString() {
+        return year + ": " + title + " by " + author;
+    }
+}
+
+
+
+
+
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+
+import java.io.*;
+import java.util.*;
+
+public class PublicationSummarySystem {
+
+    private List<Publication> publications = new ArrayList<>();
+
+    public static void main(String[] args) {
+        PublicationSummarySystem system = new PublicationSummarySystem();
+        system.loadPublicationsFromExcel("publications.xlsx");
+        system.generateYearWiseSummaries();
+        system.exportToWord("PublicationSummary.docx");
+    }
+
+    // Load Publications from Excel
+    public void loadPublicationsFromExcel(String filePath) {
+        try (FileInputStream fis = new FileInputStream(new File(filePath));
+             Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheetAt();
+            for (Row row : sheet) {
+                if (row.getRowNum() == ) continue; // Skip header
+                String author = row.getCell().getStringCellValue();
+                String title = row.getCell(1).getStringCellValue();
+                int year = (int) row.getCell(2).getNumericCellValue();
+                publications.add(new Publication(author, title, year));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Generate Year-wise Summaries
+    public void generateYearWiseSummaries() {
+        Map<Integer, List<Publication>> yearMap = new HashMap<>();
+        for (Publication pub : publications) {
+            yearMap.putIfAbsent(pub.getYear(), new ArrayList<>());
+            yearMap.get(pub.getYear()).add(pub);
+        }
+
+        for (Map.Entry<Integer, List<Publication>> entry : yearMap.entrySet()) {
+            System.out.println("Year: " + entry.getKey());
+            for (Publication pub : entry.getValue()) {
+                System.out.println(" - " + pub.getTitle() + " by " + pub.getAuthor());
+            }
+        }
+    }
+
+    // Export to Word
+    public void exportToWord(String filePath) {
+        try (XWPFDocument document = new XWPFDocument()) {
+            XWPFParagraph paragraph = document.createParagraph();
+            for (Publication pub : publications) {
+                paragraph.createRun().setText(pub.toString());
+            }
+            try (FileOutputStream out = new FileOutputStream(filePath)) {
+                document.write(out);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Publication class
+    static class Publication {
+        private String author;
+        private String title;
+        private int year;
+
+        public Publication(String author, String title, int year) {
+            this.author = author;
+            this.title = title;
+            this.year = year;
+        }
+
+        public String getAuthor() {
+            return author;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public int getYear() {
+            return year;
+        }
+
+        @Override
+        public String toString() {
+            return year + ": " + title + " by " + author;
+        }
+    }
+}
